@@ -3,7 +3,7 @@
 #include "Diagnostics.h"
 
 #include "SPICE/SpiceEct/EctModel.h"
-#include "SPICE/SpiceTrade/AlxTypedModel.h"
+#include "SPICE/SpiceTrade/AlxModel.h"
 
 #include <array>
 #include <cstddef>
@@ -19,12 +19,35 @@ namespace skewer::core {
 enum class FormationResolutionStatus { Unique, Missing, Ambiguous };
 enum class EnemyJoinStatus { Unique, Missing, Ambiguous, Empty };
 
+struct AlxLocalizedName {
+    std::string japanese{};
+    std::optional<std::string> localized{};
+};
+
+struct AlxEnemyRecord {
+    std::uint32_t entryId = 0U;
+    AlxLocalizedName name{};
+};
+
+struct AlxEnemyReference {
+    std::uint8_t enemyId = 255U;
+    AlxLocalizedName name{};
+};
+
+struct AlxFormationRecord {
+    std::string filter{};
+    std::uint32_t entryId = 0U;
+    std::uint8_t initiative = 0U;
+    std::uint8_t magicExperience = 0U;
+    std::array<AlxEnemyReference, 8U> enemies{};
+};
+
 struct EnemySlotContext {
     std::size_t slotIndex = 0U;
     std::uint8_t enemyId = 255U;
     EnemyJoinStatus joinStatus = EnemyJoinStatus::Empty;
-    spice::trade::alx::LocalizedName referenceName{};
-    std::optional<spice::trade::alx::LocalizedName> canonicalName{};
+    AlxLocalizedName referenceName{};
+    std::optional<AlxLocalizedName> canonicalName{};
     std::string displayName{};
 
     [[nodiscard]] bool empty() const noexcept { return joinStatus == EnemyJoinStatus::Empty; }
@@ -41,11 +64,11 @@ struct FormationResolution {
 
 class AlxDataset final {
 public:
-    [[nodiscard]] static AlxDataset fromTables(
+    [[nodiscard]] static AlxDataset fromRecords(
         std::filesystem::path sourceRoot,
         spice::trade::alx::AlxLocale locale,
-        spice::trade::alx::EnemyTable enemies,
-        spice::trade::alx::EnemyEncounterTable encounters);
+        std::vector<AlxEnemyRecord> enemies,
+        std::vector<AlxFormationRecord> encounters);
 
     [[nodiscard]] const std::filesystem::path& sourceRoot() const noexcept;
     [[nodiscard]] spice::trade::alx::AlxLocale locale() const noexcept;
@@ -60,8 +83,8 @@ public:
 private:
     std::filesystem::path sourceRoot_{};
     spice::trade::alx::AlxLocale locale_{};
-    spice::trade::alx::EnemyTable enemies_{};
-    spice::trade::alx::EnemyEncounterTable encounters_{};
+    std::vector<AlxEnemyRecord> enemies_{};
+    std::vector<AlxFormationRecord> encounters_{};
     std::map<std::string, std::vector<std::size_t>> formationGroups_{};
     std::map<std::uint32_t, std::vector<std::size_t>> canonicalEnemies_{};
     bool appearsGameCube_ = false;

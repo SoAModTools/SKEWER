@@ -30,7 +30,7 @@ Area 99, GameCube fields, and ALX editing and export are not currently supported
 
 - Visual Studio with the MSVC `v145` toolchain.
 - Qt 6.10.3 `msvc2022_64`, registered with Qt/MSBuild as `6.10.3_msvc2022_64`.
-- Git submodules initialized for SPICE and its dependencies.
+- The SPICE Git submodule initialized.
 
 Initialize the submodules:
 

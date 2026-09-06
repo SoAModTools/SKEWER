@@ -4,7 +4,7 @@
 #include <QtConcurrent/QtConcurrentRun>
 
 #include "SPICE/SpiceEct/EctModel.h"
-#include "SPICE/SpiceTrade/AlxTypedModel.h"
+#include "SPICE/SpiceTrade/AlxModel.h"
 
 #include <algorithm>
 #include <filesystem>

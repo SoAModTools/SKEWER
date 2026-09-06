@@ -12,7 +12,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Compression", "SPICE\Compre
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpiceRoot", "SPICE\SpiceRoot\SpiceRoot.vcxproj", "{6F9D8280-6F7B-4237-9D4A-D9A09E7A1B2E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sa3Dport", "SPICE\Sa3Dport\Sa3Dport.vcxproj", "{DF6013F5-9B25-4250-A0F7-EAF86E7BE9D7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpiceModeling", "SPICE\SpiceModeling\SpiceModeling.vcxproj", "{DF6013F5-9B25-4250-A0F7-EAF86E7BE9D7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpiceGvm", "SPICE\SpiceGvm\SpiceGvm.vcxproj", "{A3D377F9-43B8-4A4B-8C78-8F069B98E6F1}"
 EndProject

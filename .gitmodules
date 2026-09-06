@@ -1,3 +1,3 @@
 [submodule "SPICE"]
 	path = SPICE
-	url = https://github.com/jahorta/SPICE.git
+	url = https://github.com/SoAModTools/SPICE.git

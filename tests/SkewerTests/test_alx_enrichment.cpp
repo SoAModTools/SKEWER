@@ -11,28 +11,24 @@
 namespace {
 
 using spice::trade::alx::AlxLocale;
-using spice::trade::alx::EnemyEncounterRecord;
-using spice::trade::alx::EnemyEncounterTable;
-using spice::trade::alx::EnemyRecord;
-using spice::trade::alx::EnemyTable;
-using spice::trade::alx::LocalizedName;
+using skewer::core::AlxEnemyRecord;
+using skewer::core::AlxFormationRecord;
+using skewer::core::AlxLocalizedName;
 
-[[nodiscard]] LocalizedName name(std::string japanese, std::string localized) {
+[[nodiscard]] AlxLocalizedName name(std::string japanese, std::string localized) {
     return { std::move(japanese), std::move(localized) };
 }
 
-[[nodiscard]] EnemyRecord enemy(const std::uint32_t id, std::vector<std::string> filters,
-    std::string localized) {
-    EnemyRecord result{};
+[[nodiscard]] AlxEnemyRecord enemy(const std::uint32_t id, std::string localized) {
+    AlxEnemyRecord result{};
     result.entryId = id;
-    result.filters = std::move(filters);
     result.name = name("JP " + localized, std::move(localized));
     return result;
 }
 
-[[nodiscard]] EnemyEncounterRecord formation(const std::string& filter,
+[[nodiscard]] AlxFormationRecord formation(const std::string& filter,
     const std::uint32_t id, const std::uint8_t enemyId, const std::string& localized) {
-    EnemyEncounterRecord result{};
+    AlxFormationRecord result{};
     result.filter = filter;
     result.entryId = id;
     result.initiative = 52U;
@@ -83,17 +79,16 @@ TEST(AlxEnrichment, RequiresBothCanonicalCsvFilesInTheSelectedDirectory) {
     const auto loaded = skewer::core::loadAlxDataset(root / "tmp/alx-directory-that-does-not-exist");
     EXPECT_FALSE(loaded.ok());
     EXPECT_FALSE(loaded.dataset.has_value());
-    EXPECT_TRUE(hasMessage(loaded.diagnostics, "Could not open"));
+    EXPECT_TRUE(hasMessage(loaded.diagnostics, "is missing"));
 }
 
 TEST(AlxEnrichment, ResolvesWithinFieldAndJoinsCanonicalEnemyById) {
-    EnemyTable enemies{};
-    enemies.records.push_back(enemy(7U, { "A106A_EP.BIN" }, "Variant"));
-    enemies.records.push_back(enemy(7U, { "*" }, "Canonical"));
-    EnemyEncounterTable encounters{};
-    encounters.records.push_back(formation("A106A_EP.BIN", 4U, 7U, "Canonical"));
-    encounters.records.push_back(formation("A109B_EP.BIN", 4U, 8U, "Other field"));
-    const auto dataset = skewer::core::AlxDataset::fromTables(
+    std::vector<AlxEnemyRecord> enemies{ enemy(7U, "Canonical") };
+    std::vector<AlxFormationRecord> encounters{
+        formation("A106A_EP.BIN", 4U, 7U, "Canonical"),
+        formation("A109B_EP.BIN", 4U, 8U, "Other field"),
+    };
+    const auto dataset = skewer::core::AlxDataset::fromRecords(
         "alx", AlxLocale::UnitedStates, std::move(enemies), std::move(encounters));
 
     const auto resolved = dataset.resolveFormation("a106a", 4U);
@@ -107,15 +102,14 @@ TEST(AlxEnrichment, ResolvesWithinFieldAndJoinsCanonicalEnemyById) {
 }
 
 TEST(AlxEnrichment, PreservesMissingAndAmbiguousJoinsWithoutGuessing) {
-    EnemyTable enemies{};
-    enemies.records.push_back(enemy(7U, { "*" }, "First"));
-    enemies.records.push_back(enemy(7U, { "*" }, "Second"));
-    EnemyEncounterTable encounters{};
-    encounters.records.push_back(formation("a106a_ep.bin", 4U, 7U, "Reference"));
-    encounters.records.push_back(formation("A106A_EP.BIN", 5U, 9U, "Fallback"));
-    encounters.records.push_back(formation("A106A_EP.BIN", 6U, 9U, "Duplicate one"));
-    encounters.records.push_back(formation("A106A_EP.BIN", 6U, 9U, "Duplicate two"));
-    const auto dataset = skewer::core::AlxDataset::fromTables(
+    std::vector<AlxEnemyRecord> enemies{ enemy(7U, "First"), enemy(7U, "Second") };
+    std::vector<AlxFormationRecord> encounters{
+        formation("a106a_ep.bin", 4U, 7U, "Reference"),
+        formation("A106A_EP.BIN", 5U, 9U, "Fallback"),
+        formation("A106A_EP.BIN", 6U, 9U, "Duplicate one"),
+        formation("A106A_EP.BIN", 6U, 9U, "Duplicate two"),
+    };
+    const auto dataset = skewer::core::AlxDataset::fromRecords(
         "alx", AlxLocale::UnitedStates, std::move(enemies), std::move(encounters));
 
     const auto ambiguousEnemy = dataset.resolveFormation("A106A", 4U);
@@ -130,15 +124,14 @@ TEST(AlxEnrichment, PreservesMissingAndAmbiguousJoinsWithoutGuessing) {
 }
 
 TEST(AlxEnrichment, FallsBackToJapaneseCanonicalName) {
-    EnemyRecord canonical{};
+    AlxEnemyRecord canonical{};
     canonical.entryId = 7U;
-    canonical.filters = { "*" };
     canonical.name = { "カノニカル", std::nullopt };
-    EnemyTable enemies{ { canonical } };
+    std::vector<AlxEnemyRecord> enemies{ canonical };
     auto encounter = formation("A106A_EP.BIN", 4U, 7U, "Reference");
     encounter.enemies[0].name = { "カノニカル", std::nullopt };
-    EnemyEncounterTable encounters{ { encounter } };
-    const auto dataset = skewer::core::AlxDataset::fromTables(
+    std::vector<AlxFormationRecord> encounters{ encounter };
+    const auto dataset = skewer::core::AlxDataset::fromRecords(
         "alx", AlxLocale::Japanese, std::move(enemies), std::move(encounters));
 
     const auto resolved = dataset.resolveFormation("A106A", 4U);
@@ -147,11 +140,11 @@ TEST(AlxEnrichment, FallsBackToJapaneseCanonicalName) {
 }
 
 TEST(AlxEnrichment, ValidatesOnlyEncounterIdsWithNonzeroWeight) {
-    EnemyTable enemies{};
-    enemies.records.push_back(enemy(7U, { "*" }, "Canonical"));
-    EnemyEncounterTable encounters{};
-    encounters.records.push_back(formation("A106A_EP.BIN", 4U, 7U, "Canonical"));
-    const auto dataset = skewer::core::AlxDataset::fromTables(
+    std::vector<AlxEnemyRecord> enemies{ enemy(7U, "Canonical") };
+    std::vector<AlxFormationRecord> encounters{
+        formation("A106A_EP.BIN", 4U, 7U, "Canonical"),
+    };
+    const auto dataset = skewer::core::AlxDataset::fromRecords(
         "alx", AlxLocale::UnitedStates, std::move(enemies), std::move(encounters));
     spice::ect::EctFlatContent ect{};
     ect.tables.resize(1U);
@@ -164,14 +157,14 @@ TEST(AlxEnrichment, ValidatesOnlyEncounterIdsWithNonzeroWeight) {
 }
 
 TEST(AlxEnrichment, DiagnosesCanonicalDuplicatesAndNameDisagreement) {
-    EnemyTable enemies{};
-    enemies.records.push_back(enemy(7U, { "*" }, "Canonical"));
-    enemies.records.push_back(enemy(8U, { "*" }, "First"));
-    enemies.records.push_back(enemy(8U, { "*" }, "Second"));
-    EnemyEncounterTable encounters{};
-    encounters.records.push_back(formation("A106A_EP.BIN", 4U, 7U, "Different"));
-    encounters.records.push_back(formation("A106A_EP.BIN", 5U, 8U, "Reference"));
-    const auto dataset = skewer::core::AlxDataset::fromTables(
+    std::vector<AlxEnemyRecord> enemies{
+        enemy(7U, "Canonical"), enemy(8U, "First"), enemy(8U, "Second"),
+    };
+    std::vector<AlxFormationRecord> encounters{
+        formation("A106A_EP.BIN", 4U, 7U, "Different"),
+        formation("A106A_EP.BIN", 5U, 8U, "Reference"),
+    };
+    const auto dataset = skewer::core::AlxDataset::fromRecords(
         "alx", AlxLocale::UnitedStates, std::move(enemies), std::move(encounters));
     spice::ect::EctFlatContent ect{};
     ect.tables.resize(1U);

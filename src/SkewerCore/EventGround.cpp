@@ -16,6 +16,7 @@
 #include <set>
 #include <sstream>
 #include <tuple>
+#include <variant>
 
 namespace skewer::core {
 namespace {
@@ -53,13 +54,27 @@ constexpr std::size_t kMaximumEvaluationStates = 10'000U;
 
 [[nodiscard]] std::optional<std::int32_t> constantInteger(
     const spice::sct::SctParameter& parameter) {
-    if (parameter.expression.has_value() && parameter.expression->ast.has_value()) {
-        const auto literal = parameter.expression->ast->numericLiteral();
-        if (literal.has_value() && std::isfinite(literal->value) &&
-            std::floor(literal->value) == literal->value &&
-            literal->value >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
-            literal->value <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
-            return static_cast<std::int32_t>(literal->value);
+    if (parameter.expression.has_value() && parameter.expression->program.has_value()) {
+        const auto& operations = parameter.expression->program->operations;
+        if (operations.size() != 1U) return std::nullopt;
+        const auto* literal = std::get_if<spice::sct::SctScptValueOperation>(&operations.front());
+        if (literal == nullptr) return std::nullopt;
+
+        std::optional<double> value{};
+        if (literal->kind == spice::sct::SctScptValueKind::FloatLiteral &&
+            literal->payloadWords.size() == 1U) {
+            value = static_cast<double>(std::bit_cast<float>(literal->payloadWords.front()));
+        } else if (literal->kind == spice::sct::SctScptValueKind::DecimalLiteral &&
+            literal->payloadWords.empty()) {
+            const auto whole = static_cast<std::int16_t>((literal->encodingWord >> 8U) & 0xFFFFU);
+            const auto fraction = static_cast<std::uint8_t>(literal->encodingWord & 0xFFU);
+            value = static_cast<double>(whole) + static_cast<double>(fraction) / 256.0;
+        }
+        if (value.has_value() && std::isfinite(*value) &&
+            std::floor(*value) == *value &&
+            *value >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
+            *value <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
+            return static_cast<std::int32_t>(*value);
         }
         return std::nullopt;
     }

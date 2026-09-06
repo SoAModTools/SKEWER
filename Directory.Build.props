@@ -4,7 +4,7 @@
        When consumed from SKEWER.sln, preserve that contract without modifying the submodule. -->
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)SPICE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)SPICE;$(MSBuildThisFileDirectory)SPICE\SpiceModeling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>
