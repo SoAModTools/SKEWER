@@ -74,8 +74,5 @@
       <Project>{A1875091-0BE3-44D0-B97A-A1E22E719691}</Project>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="RealCorpus.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

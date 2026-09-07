@@ -1,7 +1,4 @@
-#include "RealCorpus.h"
-
 #include "SkewerCore/AlxEnrichment.h"
-#include "SkewerCore/FieldLoader.h"
 
 #include <gtest/gtest.h>
 
@@ -58,13 +55,6 @@ using skewer::core::AlxLocalizedName;
         candidate = candidate.parent_path();
     }
     return {};
-}
-
-[[nodiscard]] std::filesystem::path privateAlxCorpusRoot() {
-    const auto root = repositoryRoot();
-    return root.empty()
-        ? std::filesystem::path{}
-        : root / "SPICE/SpiceTrade/Alx v5.0.0 corpuses";
 }
 
 } // namespace
@@ -174,55 +164,4 @@ TEST(AlxEnrichment, DiagnosesCanonicalDuplicatesAndNameDisagreement) {
     const auto diagnostics = dataset.validateField("A106A", ect);
     EXPECT_TRUE(hasMessage(diagnostics, "name disagrees"));
     EXPECT_TRUE(hasMessage(diagnostics, "more than one canonical"));
-}
-
-TEST(AlxEnrichment, LoadsPrivateDreamcastLocalesAndOrdinaryGroupsWhenAvailable) {
-    const auto corpora = privateAlxCorpusRoot();
-    if (!std::filesystem::is_directory(corpora)) {
-        GTEST_SKIP() << "Private ALX 5.0.0 corpus is unavailable.";
-    }
-    for (const auto* profile : {
-        "2000-08-28-dc-jp-final", "2000-09-18-dc-us-final", "2001-02-19-dc-eu-final" }) {
-        const auto loaded = skewer::core::loadAlxDataset(corpora / profile / "disc-1");
-        ASSERT_TRUE(loaded.ok()) << profile;
-        EXPECT_FALSE(loaded.dataset->appearsGameCube());
-        for (const auto* stem : skewer::tests::kOrdinaryDreamcastFieldStems) {
-            EXPECT_EQ(loaded.dataset->resolveFormation(stem, 0U).status,
-                skewer::core::FormationResolutionStatus::Unique) << profile << ' ' << stem;
-        }
-    }
-}
-
-TEST(AlxEnrichment, AcceptsGameCubeCorpusWithNonblockingWarning) {
-    const auto corpora = privateAlxCorpusRoot();
-    if (!std::filesystem::is_directory(corpora)) {
-        GTEST_SKIP() << "Private ALX 5.0.0 corpus is unavailable.";
-    }
-    const auto loaded = skewer::core::loadAlxDataset(
-        corpora / "2002-12-19-gc-us-final");
-    ASSERT_TRUE(loaded.ok());
-    EXPECT_TRUE(loaded.dataset->appearsGameCube());
-    EXPECT_TRUE(hasMessage(loaded.diagnostics, "GameCube"));
-    EXPECT_EQ(loaded.dataset->resolveFormation("A106A", 0U).status,
-        skewer::core::FormationResolutionStatus::Missing);
-}
-
-TEST(AlxEnrichment, ValidatesExtendedDreamcastFieldCorpusWhenAvailable) {
-    const std::filesystem::path fieldRoot = LR"(D:\SoADC\SoA(Usa)Disc1Assets\FIELD)";
-    if (!std::filesystem::exists(fieldRoot)) GTEST_SKIP() << "Dreamcast FIELD corpus is unavailable.";
-    const auto corpora = privateAlxCorpusRoot();
-    if (!std::filesystem::is_directory(corpora)) {
-        GTEST_SKIP() << "Private ALX 5.0.0 corpus is unavailable.";
-    }
-    const auto loaded = skewer::core::loadAlxDataset(
-        corpora / "2000-09-18-dc-us-final/disc-1");
-    ASSERT_TRUE(loaded.ok());
-    for (const auto* stem : skewer::tests::kOrdinaryDreamcastFieldStems) {
-        const auto field = skewer::core::FieldLoader::load({ stem,
-            fieldRoot / (std::string(stem) + ".ECT"), fieldRoot / (std::string(stem) + ".MLD") });
-        ASSERT_TRUE(field.ok()) << stem;
-        const auto* flat = std::get_if<spice::ect::EctFlatContent>(&field.document->workingEct.content);
-        ASSERT_NE(flat, nullptr) << stem;
-        EXPECT_TRUE(loaded.dataset->validateField(stem, *flat, field.document->assets.ectPath).empty()) << stem;
-    }
 }

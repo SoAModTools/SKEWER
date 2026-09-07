@@ -74,3 +74,7 @@ SKEWER stores its `workspace` beside the executable and does not fall back to Ap
 SKEWER uses [SPICE](SPICE/README.md) for Dreamcast field parsing, writing, and format support. SPICE and its third-party components remain subject to their respective licenses and notices.
 
 SKEWER is an independent fan and research project and is not affiliated with or endorsed by the rights holders of *Skies of Arcadia*.
+
+## License
+
+SKEWER is licensed under the [GNU General Public License v3.0](LICENSE.md).
