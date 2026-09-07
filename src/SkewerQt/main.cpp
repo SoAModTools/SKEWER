@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     QSurfaceFormat::setDefaultFormat(format);
     QApplication application(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("SKEWER"));
-    QCoreApplication::setOrganizationName(QStringLiteral("jahorta"));
+    QCoreApplication::setOrganizationName(QStringLiteral("SoAModTools"));
     skewer::qt::MainWindow window{};
     window.show();
     if (smokeTest) {

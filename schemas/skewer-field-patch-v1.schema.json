@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/jahorta/SKEWER/schemas/skewer-field-patch-v1.schema.json",
+  "$id": "https://github.com/SoAModTools/SKEWER/schemas/skewer-field-patch-v1.schema.json",
   "title": "SKEWER ordinary Dreamcast field patch",
   "type": "object",
   "additionalProperties": false,
